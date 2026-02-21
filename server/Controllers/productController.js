@@ -2,6 +2,7 @@ import { catchAsyncErrors } from "../Middleware/catchAsyncError.js";
 import ErrorHandler from "../Middleware/errorMiddlewares.js";
 import { v2 as cloudinary } from "cloudinary";
 import database from "../database/db.js";
+import e from "express";
 
 export const createProduct = catchAsyncErrors(async (req, res, next) => {
     const { name, description, price, category, stock } = req.body;
@@ -51,14 +52,442 @@ export const createProduct = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler("Error creating product.", 500));
     }
 
-});  
+});
 
 export const fetchAllProducts = catchAsyncErrors(async (req, res, next) => {
-        const {availability, price, category, rating, search} = req.query;
+    const { availability, price, category, ratings, search } = req.query;
 
-        const page = parseInt(req.query.page) || 1;
-        const limit = 10;
-        const offset = (page - 1) * limit;
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
 
-        
+    const conditions = [];
+    let values = [];
+    let index = 1;
+
+    let paginationPlaceholders = {};
+
+
+    // Filtering products by availability
+    if (availability === "in-stock") {
+        conditions.push(`stock > 5`);
+    } else if (availability === "limited") {
+        conditions.push(`stock > 0 AND stock <= 5`);
+    } else if (availability === "out-of-stock") {
+        conditions.push(`stock = 0`);
+    }
+
+
+    // Filtering products by price range
+    if (price) {
+        const [minPrice, maxPrice] = price.split("-");
+        if (minPrice && maxPrice) {
+            conditions.push(`price BETWEEN $${index} AND $${index + 1}`);
+            values.push(minPrice, maxPrice);
+            index += 2;
+        }
+
+    }
+
+    // Filtering products by category
+    if (category) {
+        conditions.push(`category ILIKE $${index}`);
+        values.push(`%${category}%`);
+        index++;
+    }
+
+    // Filtering products by rating
+    if (ratings) {
+        conditions.push(`ratings>= $${index}`);
+        values.push(ratings);
+        index++;
+    }
+
+    // Add search query
+    if (search) {
+        conditions.push(`p.name ILIKE $${index} OR p.description ILIKE $${index}`);
+        values.push(`%${search}%`);
+        index++;
+    }
+
+    const whereClause = conditions.length
+        ? `WHERE ${conditions.join(" AND ")}`
+        : "";
+
+    // Get Count of filtered products
+    const totalProductsResult = await database.query(
+        `SELECT COUNT(*) FROM products p ${whereClause}`,
+        values
+    );
+
+    const totalProducts = parseInt(totalProductsResult.rows[0].count);
+
+    paginationPlaceholders.limit = `$${index}`;
+    values.push(limit);
+    index++;
+
+    paginationPlaceholders.offset = `$${index}`;
+    values.push(offset);
+    index++;
+
+    // Fetch with reviews
+    const query = `
+        SELECT p.*,
+        COUNT(r.id) AS review_count 
+        FROM products p 
+        LEFT JOIN reviews r ON p.id = r.product_id
+        ${whereClause}
+        GROUP BY p.id
+        ORDER BY p.created_at DESC
+        LIMIT ${paginationPlaceholders.limit} 
+        OFFSET ${paginationPlaceholders.offset}
+    `;
+
+    const result = await database.query(query, values);
+
+    // QUERY for fetching new products added in last 30 days 
+    const newProductsQuery = `
+        SELECT p.*,
+        COUNT(r.id) AS review_count
+        FROM products p
+        LEFT JOIN reviews r ON p.id = r.product_id
+        WHERE p.created_at >= NOW() - INTERVAL '30 days'
+        GROUP BY p.id
+        ORDER BY p.created_at DESC
+        LIMIT 8
+    `;
+
+    const newProductsResult = await database.query(newProductsQuery);
+
+    // QUERY for fetching top rated products (ratings>= 4.5) 
+    const topRatedQuery = `
+        SELECT p.*,
+        COUNT(r.id) AS review_count
+        FROM products p
+        LEFT JOIN reviews r ON p.id = r.product_id
+        WHERE p.ratings >= 4.5
+        GROUP BY p.id
+        ORDER BY p.ratings DESC, p.created_at DESC
+        LIMIT 8
+    `;
+
+    const topRatedResult = await database.query(topRatedQuery);
+
+    res.status(200).json({
+        success: true,
+        products: result.rows,
+        totalProducts,
+        newProductsQuery: newProductsResult.rows,
+        topRatedProducts: topRatedResult.rows,
+    });
+
+});
+
+export const updateProduct = catchAsyncErrors(async (req, res, next) => {
+    const { productId } = req.params;
+    const { name, description, price, category, stock } = req.body;
+
+    if (!name && !description && !price && !category && !stock) {
+        return next(new ErrorHandler("Please provide complete product details.", 400));
+    }
+
+    try {
+        const product = await database.query(`SELECT * FROM products WHERE id = $1`, [productId]);
+
+        if (product.rows.length === 0) {
+            return next(new ErrorHandler("Product not found.", 404));
+        }
+
+        const result = await database.query(
+            `UPDATE products SET name = $1, description = $2, price = $3, category = $4, stock = $5 WHERE id = $6 
+        RETURNING *`,
+            [name, description, price, category, stock, productId]
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Product updated successfully.",
+            updateProduct: result.rows[0],
+        });
+
+    } catch (error) {
+
+        return next(new ErrorHandler(error.message, 500));
+    }
+
+});
+
+export const deleteProduct = catchAsyncErrors(async (req, res, next) => {
+
+    const { productId } = req.params;
+
+    const product = await database.query(`SELECT * FROM products WHERE id = $1`, [productId]);
+
+    if (product.rows.length === 0) {
+        return next(new ErrorHandler("Product not found.", 404));
+    }
+
+    const images = product.rows[0].images;
+
+    const deleteResult = await database.query(
+        `DELETE FROM products WHERE id = $1 RETURNING *`,
+        [productId]
+    );
+
+    if (deleteResult.rows.length === 0) {
+        return next(new ErrorHandler("Failed to delete product.", 500));
+    }
+
+    if (images && images.length > 0) {
+
+        for (const image of images) {
+
+            await cloudinary.uploader.destroy(image.public_id);
+        }
+    }
+
+    res.status(200).json({
+        success: true,
+        message: "Product deleted successfully.",
+    });
+
+
+});
+
+export const fetchSingleProduct = catchAsyncErrors(async (req, res, next) => {
+
+    const { productId } = req.params;
+
+    const result = await database.query(
+        `
+            SELECT p.*,
+            COALESCE(
+                json_agg(
+                    json_build_object(
+                        'review_id', r.id,
+                        'rating', r.rating,
+                        'comment', r.comment,
+                        'reviewer', json_build_object(
+                            'id', u.id,
+                            'name', u.name,
+                            'avatar', u.avatar
+                        )
+                    )
+                ) FILTER (WHERE r.id IS NOT NULL), 
+                '[]'
+            ) AS reviews
+            FROM products p
+            LEFT JOIN reviews r ON p.id = r.product_id
+            LEFT JOIN users u ON r.user_id = u.id
+            WHERE p.id = $1
+            GROUP BY p.id
+        `,
+        [productId]
+    );
+
+    res.status(200).json({
+        success: true,
+        message: "Product fetched successfully.",
+        product: result.rows[0],
+    });
+
+});
+
+export const postProductReview = catchAsyncErrors(async (req, res, next) => {
+    const { productId } = req.params;
+    const { rating, comment } = req.body;
+
+    if (!rating || !comment) {
+        return next(new ErrorHandler("Please provide rating and comment.", 400));
+    }
+
+    const purchaseCheckQuery =
+        `
+        SELECT oi.product_id
+        FROM order_items oi
+        JOIN orders o ON o.id = oi.order_id
+        JOIN payments p ON p.order_id = o.id
+        WHERE o.buyer_id = $1 
+        AND oi.product_id = $2
+        AND p.payment_status = 'Paid'
+        LIMIT 1
+    `;
+
+    const { rows } = await database.query(purchaseCheckQuery, [req.user.id, productId]);
+
+    if (rows.length === 0) {
+        return res.status(403).json({
+            success: false,
+            message: "You can only review products you have purchased.",
+        });
+    }
+
+    const product = await database.query(`SELECT * FROM products WHERE id = $1`, [productId]);
+
+    if (product.rows.length === 0) {
+        return next(new ErrorHandler("Product not found.", 404));
+    }
+
+    const isAlreadyReviewed = await database.query(
+        `SELECT * FROM reviews WHERE product_id = $1 AND user_id = $2`,
+        [productId, req.user.id]
+    );
+
+    let review;
+
+    if (isAlreadyReviewed.rows.length > 0) {
+        review = await database.query(
+            `UPDATE reviews SET rating = $1, comment = $2, created_at = CURRENT_TIMESTAMP WHERE product_id = $3 AND user_id = $4 RETURNING *`,
+            [ratings, comment, productId, req.user.id]
+        );
+    } else {
+        review = await database.query(
+            `INSERT INTO reviews (product_id, user_id, rating, comment) VALUES ($1, $2, $3, $4) RETURNING *`,
+            [productId, req.user.id, ratings, comment]
+        );
+    }
+
+    // Update product ratings and review count
+
+    const allReviews = await database.query(
+        `SELECT AVG(rating) AS avg_rating FROM reviews WHERE product_id = $1`, [productId]
+    );
+
+    const newAvgRating = allReviews.rows[0].avg_rating;
+
+    const updateProductRating = await database.query(
+        `UPDATE products SET ratings = $1 WHERE id = $2 RETURNING *`,
+        [newAvgRating, productId]
+    );
+
+    res.status(200).json({
+        success: true,
+        message: "Review Posted Successfully.",
+        review: review.rows[0],
+        updatedProduct: updateProductRating.rows[0],
+    });
+
+});
+
+export const deleteReview = catchAsyncErrors(async (req, res, next) => {
+    const { productId } = req.params;
+
+    const review = await database.query(
+        `DELETE FROM reviews WHERE product_id = $1 AND user_id = $2 RETURNING *`,
+        [productId, req.user.id]
+    );
+
+    if (review.rows.length === 0) {
+        return next(new ErrorHandler("Review not found", 404));
+    }
+
+    // Update product ratings and review count
+
+    const allReviews = await database.query(
+        `SELECT AVG(rating) AS avg_rating FROM reviews WHERE product_id = $1`, [productId]
+    );
+
+    const newAvgRating = allReviews.rows[0].avg_rating;
+
+    const updateProductRating = await database.query(
+        `UPDATE products SET ratings = $1 WHERE id = $2 RETURNING *`,
+        [newAvgRating, productId]
+    );
+
+    res.status(200).json({
+        success: true,
+        message: "Review deleted successfully.",
+        Product: updateProductRating.rows[0],
+    });
+
+});
+
+export const fetchAIFilteredProducts = catchAsyncErrors(async (req, res, next) => {
+
+    const { userPrompt } = req.body;
+
+    if (!userPrompt) {
+        return next(new ErrorHandler("Provide a valid prompt.", 400));
+    }
+
+    const filterKeywords = (query) => {
+
+        const stopWords = new Set([
+            // Articles
+            "a", "an", "the",
+
+            // Pronouns
+            "i", "me", "my", "mine", "myself",
+            "we", "us", "our", "ours", "ourselves",
+            "you", "your", "yours", "yourself", "yourselves",
+            "he", "him", "his", "himself",
+            "she", "her", "hers", "herself",
+            "it", "its", "itself",
+            "they", "them", "their", "theirs", "themselves",
+
+            // Demonstratives
+            "this", "that", "these", "those",
+
+            // Question words
+            "what", "which", "who", "whom", "whose",
+            "when", "where", "why", "how",
+
+            // Auxiliary / Helping verbs
+            "am", "is", "are", "was", "were", "be", "been", "being",
+            "have", "has", "had", "having",
+            "do", "does", "did", "doing",
+            "will", "would", "shall", "should",
+            "may", "might", "must", "can", "could",
+
+            // Negations & contractions
+            "not", "no", "nor",
+            "don't", "doesn't", "didn't",
+            "isn't", "aren't", "wasn't", "weren't",
+            "haven't", "hasn't", "hadn't",
+            "won't", "wouldn't", "can't", "couldn't",
+            "shouldn't", "mightn't", "mustn't",
+            "i'm", "you're", "he's", "she's", "it's",
+            "we're", "they're", "i've", "you've",
+            "we've", "they've", "i'd", "you'd",
+            "he'd", "she'd", "we'd", "they'd",
+
+            // Conjunctions
+            "and", "or", "but", "because", "so", "although", "though", "while",
+
+            // Prepositions
+            "of", "at", "by", "for", "with", "about",
+            "against", "between", "into", "through",
+            "during", "before", "after", "above", "below",
+            "to", "from", "up", "down", "in", "out",
+            "on", "off", "over", "under", "again", "further",
+
+            // Quantifiers / Determiners
+            "all", "any", "both", "each", "few", "more",
+            "most", "other", "some", "such", "only",
+            "own", "same", "than", "too", "very",
+
+            // Adverbs / fillers
+            "just", "also", "even", "still", "already", "there", "here",
+
+            // Misc
+            "as", "if", "once"
+        ]);
+
+        return query
+        .toLowerCase()
+        .replace(/[^\w\s]/g, "")
+        .split(/\s+/)
+        .filter(word => !stopWords.has(word))
+        .map(word => `%${word}%`);
+
+    };
+
+    const keywords = filterKeywords(userPrompt);
+
+    // Step 1: Basic SQL Filtering
+
+    
+
+
+
 });
