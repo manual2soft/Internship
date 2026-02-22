@@ -2,7 +2,7 @@ import { catchAsyncErrors } from "../Middleware/catchAsyncError.js";
 import ErrorHandler from "../Middleware/errorMiddlewares.js";
 import { v2 as cloudinary } from "cloudinary";
 import database from "../database/db.js";
-import e from "express";
+import { getAIRecommendation } from "../utils/getAIRecommendation.js";
 
 export const createProduct = catchAsyncErrors(async (req, res, next) => {
     const { name, description, price, category, stock } = req.body;
@@ -413,81 +413,133 @@ export const fetchAIFilteredProducts = catchAsyncErrors(async (req, res, next) =
     const filterKeywords = (query) => {
 
         const stopWords = new Set([
-            // Articles
-            "a", "an", "the",
-
-            // Pronouns
-            "i", "me", "my", "mine", "myself",
-            "we", "us", "our", "ours", "ourselves",
-            "you", "your", "yours", "yourself", "yourselves",
-            "he", "him", "his", "himself",
-            "she", "her", "hers", "herself",
-            "it", "its", "itself",
-            "they", "them", "their", "theirs", "themselves",
-
-            // Demonstratives
-            "this", "that", "these", "those",
-
-            // Question words
-            "what", "which", "who", "whom", "whose",
-            "when", "where", "why", "how",
-
-            // Auxiliary / Helping verbs
-            "am", "is", "are", "was", "were", "be", "been", "being",
-            "have", "has", "had", "having",
-            "do", "does", "did", "doing",
-            "will", "would", "shall", "should",
-            "may", "might", "must", "can", "could",
-
-            // Negations & contractions
-            "not", "no", "nor",
-            "don't", "doesn't", "didn't",
-            "isn't", "aren't", "wasn't", "weren't",
-            "haven't", "hasn't", "hadn't",
-            "won't", "wouldn't", "can't", "couldn't",
-            "shouldn't", "mightn't", "mustn't",
-            "i'm", "you're", "he's", "she's", "it's",
-            "we're", "they're", "i've", "you've",
-            "we've", "they've", "i'd", "you'd",
-            "he'd", "she'd", "we'd", "they'd",
-
-            // Conjunctions
-            "and", "or", "but", "because", "so", "although", "though", "while",
-
-            // Prepositions
-            "of", "at", "by", "for", "with", "about",
-            "against", "between", "into", "through",
-            "during", "before", "after", "above", "below",
-            "to", "from", "up", "down", "in", "out",
-            "on", "off", "over", "under", "again", "further",
-
-            // Quantifiers / Determiners
-            "all", "any", "both", "each", "few", "more",
-            "most", "other", "some", "such", "only",
-            "own", "same", "than", "too", "very",
-
-            // Adverbs / fillers
-            "just", "also", "even", "still", "already", "there", "here",
-
-            // Misc
-            "as", "if", "once"
+            "the",
+            "they",
+            "them",
+            "then",
+            "I",
+            "we",
+            "you",
+            "he",
+            "she",
+            "it",
+            "is",
+            "a",
+            "an",
+            "of",
+            "and",
+            "or",
+            "to",
+            "for",
+            "from",
+            "on",
+            "who",
+            "whom",
+            "why",
+            "when",
+            "which",
+            "with",
+            "this",
+            "that",
+            "in",
+            "at",
+            "by",
+            "be",
+            "not",
+            "was",
+            "were",
+            "has",
+            "have",
+            "had",
+            "do",
+            "does",
+            "did",
+            "so",
+            "some",
+            "any",
+            "how",
+            "can",
+            "could",
+            "should",
+            "would",
+            "there",
+            "here",
+            "just",
+            "than",
+            "because",
+            "but",
+            "its",
+            "it's",
+            "if",
+            ".",
+            ",",
+            "!",
+            "?",
+            ">",
+            "<",
+            ";",
+            "`",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
         ]);
 
         return query
-        .toLowerCase()
-        .replace(/[^\w\s]/g, "")
-        .split(/\s+/)
-        .filter(word => !stopWords.has(word))
-        .map(word => `%${word}%`);
+            .toLowerCase()
+            .replace(/[^\w\s]/g, "")
+            .split(/\s+/)
+            .filter(word => !stopWords.has(word))
+            .map(word => `%${word}%`);
 
     };
 
     const keywords = filterKeywords(userPrompt);
 
+
     // Step 1: Basic SQL Filtering
 
-    
+    const result = await database.query(
+        `
+        SELECT * FROM products 
+        WHERE name ILIKE ANY($1) 
+        OR description ILIKE ANY($1)
+        OR category ILIKE ANY($1)
+        LIMIT 200;
+        `,
+        [keywords]
+    );
+
+    const filteredProducts = result.rows;
+
+    if (filteredProducts.length === 0) {
+        return res.status(200).json({
+            success: true,
+            message: "No products found matching your prompt.",
+            products: [],
+        });
+    }
 
 
+    // Step 2:AI Filtering
+
+    const { success, products } = await getAIRecommendation(userPrompt, filteredProducts)
+
+    res.status(200).json({
+        success: success,
+        message: "AI filtered products.",
+        products,
+    })
 
 });
+
+
+
+
+
