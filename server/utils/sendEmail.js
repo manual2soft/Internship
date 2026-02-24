@@ -1,29 +1,26 @@
 import nodeMailer from "nodemailer";
 
-export const sendEmail = async ({email,subject,message}) =>{
+export const sendEmail = async ({ email, subject, message }) => {
+  const transporter = nodeMailer.createTransport({
+    host: process.env.SMTP_HOST,
+    service: process.env.SMTP_SERVICE,
+    port: process.env.SMTP_PORT,
+    auth: {
+      user: process.env.SMTP_MAIL,
+      pass: process.env.SMTP_PASSWORD,
+    },
+  });
 
-    const transporter = nodeMailer.createTransport({
-        host: process.env.SMTP_HOST,
-        service: process.env.SMTP_SERVICE,
-        port: process.env.SMTP_PORT,
-        auth: {
-            user: process.env.SMTP_MAIL,
-            pass: process.env.SMTP_PASSWORD,
-        },
-    });
-
-    const mailOptions = {
-        from: process.env.SMTP_MAIL,
-        to: email,
-        subject: subject,
-        html: message,
-    }
-    try {
-        
-        await transporter.sendMail(mailOptions);
-        
-    } catch (error) {
-        console.error("Error sending email:", error);
-        throw error;
-    }
+  const mailOptions = {
+    from: process.env.SMTP_MAIL,
+    to: email,
+    subject: subject,
+    html: message,
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending email:", error);
+    throw error;
+  }
 };

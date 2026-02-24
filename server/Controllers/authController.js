@@ -10,237 +10,267 @@ import { sendEmail } from "../utils/sendEmail.js";
 import { v2 as cloudinary } from "cloudinary";
 
 export const register = catchAsyncErrors(async (req, res, next) => {
-    const { name, email, password } = req.body;
+  const { name, email, password } = req.body;
 
-    if (!name || !email || !password) {
-        return next(new ErrorHandler("Please provide all required fields.", 400));
-    }
+  if (!name || !email || !password) {
+    return next(new ErrorHandler("Please provide all required fields.", 400));
+  }
 
-    const isAlreadyRegistered = await database.query(`SELECT * FROM users WHERE email = $1`, [email]);
+  const isAlreadyRegistered = await database.query(
+    `SELECT * FROM users WHERE email = $1`,
+    [email],
+  );
 
-    if (isAlreadyRegistered.rows.length > 0) {
-        return next(new ErrorHandler("User Already Registered with this email.", 400));
-    }
+  if (isAlreadyRegistered.rows.length > 0) {
+    return next(
+      new ErrorHandler("User Already Registered with this email.", 400),
+    );
+  }
 
-    if (password.length < 8 || password.length > 16) {
-        return next(new ErrorHandler("Password must be between 8 and 16 characters.", 400));
-    }
+  if (password.length < 8 || password.length > 16) {
+    return next(
+      new ErrorHandler("Password must be between 8 and 16 characters.", 400),
+    );
+  }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await database.query(
-        "INSERT INTO users (name,email,password) VALUES ($1,$2,$3) RETURNING *",
-        [name, email, hashedPassword]);
+  const user = await database.query(
+    "INSERT INTO users (name,email,password) VALUES ($1,$2,$3) RETURNING *",
+    [name, email, hashedPassword],
+  );
 
-    sendToken(user.rows[0], 201, "Registered Successfully", res);
-
+  sendToken(user.rows[0], 201, "Registered Successfully", res);
 });
 
 export const login = catchAsyncErrors(async (req, res, next) => {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    if (!email || !password) {
-        return next(new ErrorHandler("Please provide both email and password.", 400));
-    }
+  if (!email || !password) {
+    return next(
+      new ErrorHandler("Please provide both email and password.", 400),
+    );
+  }
 
-    const user = await database.query(`SELECT * FROM users WHERE email = $1`, [email]);
+  const user = await database.query(`SELECT * FROM users WHERE email = $1`, [
+    email,
+  ]);
 
-    if (user.rows.length === 0) {
-        return next(new ErrorHandler("Invalid email or password.", 401));
-    }
+  if (user.rows.length === 0) {
+    return next(new ErrorHandler("Invalid email or password.", 401));
+  }
 
-    const isPasswordMatched = await bcrypt.compare(password, user.rows[0].password);
+  const isPasswordMatched = await bcrypt.compare(
+    password,
+    user.rows[0].password,
+  );
 
-    if (!isPasswordMatched) {
-        return next(new ErrorHandler("Invalid email or password.", 401));
-    }
+  if (!isPasswordMatched) {
+    return next(new ErrorHandler("Invalid email or password.", 401));
+  }
 
-    sendToken(user.rows[0], 200, "Logged in Successfully", res);
-
-
+  sendToken(user.rows[0], 200, "Logged in Successfully", res);
 });
 
 export const getUser = catchAsyncErrors(async (req, res, next) => {
-
-    const { user } = req;
-    res.status(200).json({
-        success: true,
-        user,
-    }
-    );
-
+  const { user } = req;
+  res.status(200).json({
+    success: true,
+    user,
+  });
 });
 
 export const logout = catchAsyncErrors(async (req, res, next) => {
-    res.status(200).cookie("token", " ", {
-        expires: new Date(Date.now()),
-        httpOnly: true,
-    }).json({
-        success: true,
-        message: "Logged out Successfully.",
+  res
+    .status(200)
+    .cookie("token", " ", {
+      expires: new Date(Date.now()),
+      httpOnly: true,
+    })
+    .json({
+      success: true,
+      message: "Logged out Successfully.",
     });
 });
 
 export const forgotPassword = catchAsyncErrors(async (req, res, next) => {
-    const { email } = req.body;
-    const { frontendUrl } = req.query;
+  const { email } = req.body;
+  const { frontendUrl } = req.query;
 
-    let userResult = await database.query(`SELECT * FROM users WHERE email = $1`, [email]);
-    if (userResult.rows.length === 0) {
-        return next(new ErrorHandler("User not found with this email.", 404));
-    }
-    const user = userResult.rows[0];
+  let userResult = await database.query(
+    `SELECT * FROM users WHERE email = $1`,
+    [email],
+  );
+  if (userResult.rows.length === 0) {
+    return next(new ErrorHandler("User not found with this email.", 404));
+  }
+  const user = userResult.rows[0];
 
-    const { hashedToken, resetPasswordExpiresTime, resetToken } = generateResetPasswordToken();
+  const { hashedToken, resetPasswordExpiresTime, resetToken } =
+    generateResetPasswordToken();
 
+  await database.query(
+    `UPDATE users SET reset_password_token = $1, reset_password_expire = to_timestamp($2) WHERE email = $3`,
+    [hashedToken, resetPasswordExpiresTime / 1000, email],
+  );
+
+  const resetPasswordUrl = `${frontendUrl}/password/reset/${resetToken}`;
+  // Here you would send the resetPasswordUrl to the user's email address using your email service.
+
+  const message = generateEmailTemplate(resetPasswordUrl);
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: "Ecommerce Account Password Recovery",
+      message,
+    });
+    res.status(200).json({
+      success: true,
+      message: `Email Send to ${user.email} Successfully.`,
+    });
+  } catch (error) {
     await database.query(
-        `UPDATE users SET reset_password_token = $1, reset_password_expire = to_timestamp($2) WHERE email = $3`,
-        [hashedToken, resetPasswordExpiresTime / 1000, email]
+      `UPDATE users SET reset_password_token = NULL, reset_password_expire = NULL WHERE email = $1`,
+      [email],
     );
-
-    const resetPasswordUrl = `${frontendUrl}/password/reset/${resetToken}`;
-    // Here you would send the resetPasswordUrl to the user's email address using your email service.
-
-    const message = generateEmailTemplate(resetPasswordUrl);
-
-    try {
-        await sendEmail({
-            email: user.email,
-            subject: "Ecommerce Account Password Recovery",
-            message,
-        });
-        res.status(200).json({
-            success: true,
-            message: `Email Send to ${user.email} Successfully.`,
-        });
-
-    } catch (error) {
-        await database.query(`UPDATE users SET reset_password_token = NULL, reset_password_expire = NULL WHERE email = $1`,
-            [email]
-        );
-        return next(new ErrorHandler("Failed to send email.", 500));
-
-    }
-
+    return next(new ErrorHandler("Failed to send email.", 500));
+  }
 });
 
 export const resetPassword = catchAsyncErrors(async (req, res, next) => {
-    const { token } = req.params;
-    const resetPasswordToken = crypto.createHash("sha256").update(token).digest("hex");
-    const user = await database.query(`SELECT * FROM users WHERE reset_password_token = $1 AND reset_password_expire > NOW()`,
-        [resetPasswordToken]
+  const { token } = req.params;
+  const resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+  const user = await database.query(
+    `SELECT * FROM users WHERE reset_password_token = $1 AND reset_password_expire > NOW()`,
+    [resetPasswordToken],
+  );
+  if (user.rows.length === 0) {
+    return next(
+      new ErrorHandler("Reset Password Token is invalid or has expired.", 400),
     );
-    if (user.rows.length === 0) {
-
-        return next(new ErrorHandler("Reset Password Token is invalid or has expired.", 400));
-    }
-    if (req.body.password !== req.body.confirmPassword) {
-        return next(new ErrorHandler("Password and Confirm Password do not match.", 400));
-
-    }
-
-    if (req.body.password?.length < 8 ||
-        req.body.password?.length > 16 ||
-        req.body.confirmPassword?.length < 8 ||
-        req.body.confirmPassword?.length > 16) {
-        return next(new ErrorHandler("Password must be between 8 and 16 characters.", 400));
-    }
-
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
-
-    const updatedUser = await database.query(
-        `UPDATE users SET password = $1, reset_password_token = NULL, reset_password_expire = NULL WHERE id = $2 RETURNING *`,
-        [hashedPassword, user.rows[0].id]
+  }
+  if (req.body.password !== req.body.confirmPassword) {
+    return next(
+      new ErrorHandler("Password and Confirm Password do not match.", 400),
     );
+  }
 
-    sendToken(updatedUser.rows[0], 200, "Password Reset Successfully.", res);
+  if (
+    req.body.password?.length < 8 ||
+    req.body.password?.length > 16 ||
+    req.body.confirmPassword?.length < 8 ||
+    req.body.confirmPassword?.length > 16
+  ) {
+    return next(
+      new ErrorHandler("Password must be between 8 and 16 characters.", 400),
+    );
+  }
 
+  const hashedPassword = await bcrypt.hash(req.body.password, 10);
+
+  const updatedUser = await database.query(
+    `UPDATE users SET password = $1, reset_password_token = NULL, reset_password_expire = NULL WHERE id = $2 RETURNING *`,
+    [hashedPassword, user.rows[0].id],
+  );
+
+  sendToken(updatedUser.rows[0], 200, "Password Reset Successfully.", res);
 });
 
 export const updatePassword = catchAsyncErrors(async (req, res, next) => {
-    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+  const { currentPassword, newPassword, confirmNewPassword } = req.body;
 
-    if (!currentPassword || !newPassword || !confirmNewPassword) {
-        return next(new ErrorHandler("Please provide all required fields.", 400));
-    }
+  if (!currentPassword || !newPassword || !confirmNewPassword) {
+    return next(new ErrorHandler("Please provide all required fields.", 400));
+  }
 
-    const isPasswordMatched = await bcrypt.compare(currentPassword, req.user.password);
+  const isPasswordMatched = await bcrypt.compare(
+    currentPassword,
+    req.user.password,
+  );
 
-    if (!isPasswordMatched) {
-        return next(new ErrorHandler("Current password is incorrect.", 401));
-    }
+  if (!isPasswordMatched) {
+    return next(new ErrorHandler("Current password is incorrect.", 401));
+  }
 
-    if (newPassword !== confirmNewPassword) {
-        return next(new ErrorHandler("New passwords do not match.", 400));
-    }
+  if (newPassword !== confirmNewPassword) {
+    return next(new ErrorHandler("New passwords do not match.", 400));
+  }
 
-    if (newPassword.length < 8 ||
-        newPassword.length > 16 ||
-        confirmNewPassword.length < 8 ||
-        confirmNewPassword.length > 16) {
-        return next(new ErrorHandler("New password must be between 8 and 16 characters.", 400));
-    }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    const updatedUser = await database.query(
-        `UPDATE users SET password = $1 WHERE id = $2 RETURNING *`,
-        [hashedPassword, req.user.id]
+  if (
+    newPassword.length < 8 ||
+    newPassword.length > 16 ||
+    confirmNewPassword.length < 8 ||
+    confirmNewPassword.length > 16
+  ) {
+    return next(
+      new ErrorHandler(
+        "New password must be between 8 and 16 characters.",
+        400,
+      ),
     );
+  }
 
-    sendToken(updatedUser.rows[0], 200, "Password Updated Successfully.", res);
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
 
+  const updatedUser = await database.query(
+    `UPDATE users SET password = $1 WHERE id = $2 RETURNING *`,
+    [hashedPassword, req.user.id],
+  );
+
+  sendToken(updatedUser.rows[0], 200, "Password Updated Successfully.", res);
 });
 
 export const updateProfile = catchAsyncErrors(async (req, res, next) => {
-    const { name, email } = req.body;
+  const { name, email } = req.body;
 
-    if (!name || !email) {
-        return next(new ErrorHandler("Please provide all required fields.", 400));
+  if (!name || !email) {
+    return next(new ErrorHandler("Please provide all required fields.", 400));
+  }
+
+  if (name.trim().length === 0 || email.trim().length === 0) {
+    return next(new ErrorHandler("Name and email cannot be empty.", 400));
+  }
+
+  let avatarData = {};
+
+  if (req.files && req.files.avatar) {
+    const { avatar } = req.files;
+    if (req.user?.avatar?.public_id) {
+      await cloudinary.uploader.destroy(req.user.avatar.public_id);
     }
 
-    if (name.trim().length === 0 || email.trim().length === 0) {
-        return next(new ErrorHandler("Name and email cannot be empty.", 400));
-    }
+    const newProfileImage = await cloudinary.uploader.upload(
+      avatar.tempFilePath,
+      {
+        folder: "Ecommerce_Avatars",
+        width: 150,
+        crop: "scale",
+      },
+    );
 
-    let avatarData = {};
+    avatarData = {
+      public_id: newProfileImage.public_id,
+      url: newProfileImage.secure_url,
+    };
+  }
 
-    if (req.files && req.files.avatar) {
-        const { avatar } = req.files;
-        if (req.user?.avatar?.public_id) {
-            await cloudinary.uploader.destroy(req.user.avatar.public_id);
+  let user;
 
-        }
+  if (Object.keys(avatarData).length === 0) {
+    user = await database.query(
+      `UPDATE users SET name = $1, email = $2 WHERE id = $3 RETURNING *`,
+      [name, email, req.user.id],
+    );
+  } else {
+    user = await database.query(
+      `UPDATE users SET name = $1, email = $2, avatar = $3 WHERE id = $4 RETURNING *`,
+      [name, email, avatarData, req.user.id],
+    );
+  }
 
-        const newProfileImage = await cloudinary.uploader.upload(avatar.tempFilePath, {
-            folder: "Ecommerce_Avatars",
-            width: 150,
-            crop: "scale",
-        })
-
-        avatarData = {
-            public_id: newProfileImage.public_id,
-            url: newProfileImage.secure_url
-        };
-
-    }
-
-    let user;
-
-    if (Object.keys(avatarData).length === 0) {
-        user = await database.query(
-            `UPDATE users SET name = $1, email = $2 WHERE id = $3 RETURNING *`,
-            [name, email, req.user.id]
-        );
-    } else {
-        user = await database.query(
-            `UPDATE users SET name = $1, email = $2, avatar = $3 WHERE id = $4 RETURNING *`,
-            [name, email, avatarData, req.user.id]
-        );
-    }
-
-    sendToken(user.rows[0], 200, "Profile Updated Successfully.", res);
-
+  sendToken(user.rows[0], 200, "Profile Updated Successfully.", res);
 });
-
-

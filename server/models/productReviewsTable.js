@@ -1,8 +1,8 @@
 import database from "../database/db.js";
 
 export async function createProductReviewsTable() {
-    try {
-        const query = `
+  try {
+    const query = `
             CREATE TABLE IF NOT EXISTS reviews (
                 id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
                 product_id UUID NOT NULL,
@@ -16,10 +16,9 @@ export async function createProductReviewsTable() {
             
         `;
 
-        await database.query(query);
-
-    } catch (error) {
-        console.error("Failed To Create Products Reviews Table.", error);
-        process.exit(1);
-    }
+    await database.query(query);
+  } catch (error) {
+    console.error("Failed To Create Products Reviews Table.", error);
+    process.exit(1);
+  }
 }

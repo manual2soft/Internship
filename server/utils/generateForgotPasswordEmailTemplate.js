@@ -1,5 +1,4 @@
 export const generateEmailTemplate = (resetPasswordUrl) => {
-
   return ` 
       
         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#000; padding:20px; font-family: Arial, sans-serif;">
@@ -71,5 +70,4 @@ export const generateEmailTemplate = (resetPasswordUrl) => {
         </table>
   
   `;
-
 };

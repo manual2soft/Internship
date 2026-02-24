@@ -1,9 +1,8 @@
 import database from "../database/db.js";
 
 export async function createProductsTable() {
-
-    try {
-        const query = `
+  try {
+    const query = `
             CREATE TABLE IF NOT EXISTS products (
                 id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
@@ -20,10 +19,9 @@ export async function createProductsTable() {
 
         `;
 
-        await database.query(query);
-
-    } catch (error) {
-        console.error("Failed To Create Products Table.", error);
-        process.exit(1);
-    }
+    await database.query(query);
+  } catch (error) {
+    console.error("Failed To Create Products Table.", error);
+    process.exit(1);
+  }
 }

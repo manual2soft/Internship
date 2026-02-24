@@ -1,8 +1,8 @@
 import database from "../database/db.js";
 
 export async function createShippingInfoTable() {
-    try {
-        const query = `
+  try {
+    const query = `
             CREATE TABLE IF NOT EXISTS shipping_info (
                 id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
                 order_id UUID NOT NULL UNIQUE,
@@ -18,10 +18,9 @@ export async function createShippingInfoTable() {
 
         `;
 
-        await database.query(query);
-
-    } catch (error) {
-        console.error("Failed To Create Shipping Info Table.", error);
-        process.exit(1);
-    }
+    await database.query(query);
+  } catch (error) {
+    console.error("Failed To Create Shipping Info Table.", error);
+    process.exit(1);
+  }
 }

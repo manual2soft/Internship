@@ -1,13 +1,13 @@
 import express from "express";
 import {
-    forgotPassword,
-    getUser,
-    login,
-    logout,
-    register,
-    resetPassword,
-    updatePassword,
-    updateProfile
+  forgotPassword,
+  getUser,
+  login,
+  logout,
+  register,
+  resetPassword,
+  updatePassword,
+  updateProfile,
 } from "../Controllers/authController.js";
 import { isAuthenticated } from "../Middleware/authMiddleware.js";
 

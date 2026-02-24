@@ -1,8 +1,8 @@
 import database from "../database/db.js";
 
 export async function createOrderItemTable() {
-    try {
-        const query = `
+  try {
+    const query = `
             CREATE TABLE IF NOT EXISTS order_items (
                 id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
                 order_id UUID NOT NULL,
@@ -19,10 +19,9 @@ export async function createOrderItemTable() {
 
         `;
 
-        await database.query(query);
-
-    } catch (error) {
-        console.error("Failed To Create Ordered Items Table.", error);
-        process.exit(1);
-    }
+    await database.query(query);
+  } catch (error) {
+    console.error("Failed To Create Ordered Items Table.", error);
+    process.exit(1);
+  }
 }
