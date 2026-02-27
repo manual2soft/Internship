@@ -7,7 +7,7 @@ export async function generatePaymentIntent(orderId, totalPrice) {
   try {
     const PaymentIntent = await stripe.paymentIntents.create({
       amount: totalPrice * 100,
-      currency: "usd"
+      currency: "inr"
     });
 
     await database.query(
