@@ -7,7 +7,7 @@ import {
   register,
   resetPassword,
   updatePassword,
-  updateProfile,
+  updateProfile
 } from "../Controllers/authController.js";
 import { isAuthenticated } from "../Middleware/authMiddleware.js";
 

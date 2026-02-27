@@ -10,7 +10,7 @@ export const createProduct = catchAsyncErrors(async (req, res, next) => {
 
   if (!name || !description || !price || !category || !stock) {
     return next(
-      new ErrorHandler("Please provide complete product details.", 400),
+      new ErrorHandler("Please provide complete product details.", 400)
     );
   }
 
@@ -26,12 +26,12 @@ export const createProduct = catchAsyncErrors(async (req, res, next) => {
         const result = await cloudinary.uploader.upload(image.tempFilePath, {
           folder: "Ecommerce_Product_Images",
           width: 1000,
-          crop: "scale",
+          crop: "scale"
         });
 
         uploadedImages.push({
           url: result.secure_url,
-          public_id: result.public_id,
+          public_id: result.public_id
         });
       }
     }
@@ -46,14 +46,14 @@ export const createProduct = catchAsyncErrors(async (req, res, next) => {
         category,
         stock,
         JSON.stringify(uploadedImages),
-        createdBy,
-      ],
+        createdBy
+      ]
     );
 
     res.status(201).json({
       success: true,
       message: "Product created successfully.",
-      product: product.rows[0],
+      product: product.rows[0]
     });
   } catch (error) {
     return next(new ErrorHandler("Error creating product.", 500));
@@ -120,7 +120,7 @@ export const fetchAllProducts = catchAsyncErrors(async (req, res, next) => {
   // Get Count of filtered products
   const totalProductsResult = await database.query(
     `SELECT COUNT(*) FROM products p ${whereClause}`,
-    values,
+    values
   );
 
   const totalProducts = parseInt(totalProductsResult.rows[0].count);
@@ -181,7 +181,7 @@ export const fetchAllProducts = catchAsyncErrors(async (req, res, next) => {
     products: result.rows,
     totalProducts,
     newProductsQuery: newProductsResult.rows,
-    topRatedProducts: topRatedResult.rows,
+    topRatedProducts: topRatedResult.rows
   });
 });
 
@@ -191,14 +191,14 @@ export const updateProduct = catchAsyncErrors(async (req, res, next) => {
 
   if (!name && !description && !price && !category && !stock) {
     return next(
-      new ErrorHandler("Please provide complete product details.", 400),
+      new ErrorHandler("Please provide complete product details.", 400)
     );
   }
 
   try {
     const product = await database.query(
       `SELECT * FROM products WHERE id = $1`,
-      [productId],
+      [productId]
     );
 
     if (product.rows.length === 0) {
@@ -208,13 +208,13 @@ export const updateProduct = catchAsyncErrors(async (req, res, next) => {
     const result = await database.query(
       `UPDATE products SET name = $1, description = $2, price = $3, category = $4, stock = $5 WHERE id = $6 
         RETURNING *`,
-      [name, description, price, category, stock, productId],
+      [name, description, price, category, stock, productId]
     );
 
     res.status(200).json({
       success: true,
       message: "Product updated successfully.",
-      updateProduct: result.rows[0],
+      updateProduct: result.rows[0]
     });
   } catch (error) {
     return next(new ErrorHandler(error.message, 500));
@@ -225,7 +225,7 @@ export const deleteProduct = catchAsyncErrors(async (req, res, next) => {
   const { productId } = req.params;
 
   const product = await database.query(`SELECT * FROM products WHERE id = $1`, [
-    productId,
+    productId
   ]);
 
   if (product.rows.length === 0) {
@@ -236,7 +236,7 @@ export const deleteProduct = catchAsyncErrors(async (req, res, next) => {
 
   const deleteResult = await database.query(
     `DELETE FROM products WHERE id = $1 RETURNING *`,
-    [productId],
+    [productId]
   );
 
   if (deleteResult.rows.length === 0) {
@@ -251,7 +251,7 @@ export const deleteProduct = catchAsyncErrors(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    message: "Product deleted successfully.",
+    message: "Product deleted successfully."
   });
 });
 
@@ -282,13 +282,13 @@ export const fetchSingleProduct = catchAsyncErrors(async (req, res, next) => {
             WHERE p.id = $1
             GROUP BY p.id
         `,
-    [productId],
+    [productId]
   );
 
   res.status(200).json({
     success: true,
     message: "Product fetched successfully.",
-    product: result.rows[0],
+    product: result.rows[0]
   });
 });
 
@@ -313,18 +313,18 @@ export const postProductReview = catchAsyncErrors(async (req, res, next) => {
 
   const { rows } = await database.query(purchaseCheckQuery, [
     req.user.id,
-    productId,
+    productId
   ]);
 
   if (rows.length === 0) {
     return res.status(403).json({
       success: false,
-      message: "You can only review products you have purchased.",
+      message: "You can only review products you have purchased."
     });
   }
 
   const product = await database.query(`SELECT * FROM products WHERE id = $1`, [
-    productId,
+    productId
   ]);
 
   if (product.rows.length === 0) {
@@ -333,7 +333,7 @@ export const postProductReview = catchAsyncErrors(async (req, res, next) => {
 
   const isAlreadyReviewed = await database.query(
     `SELECT * FROM reviews WHERE product_id = $1 AND user_id = $2`,
-    [productId, req.user.id],
+    [productId, req.user.id]
   );
 
   let review;
@@ -341,12 +341,12 @@ export const postProductReview = catchAsyncErrors(async (req, res, next) => {
   if (isAlreadyReviewed.rows.length > 0) {
     review = await database.query(
       `UPDATE reviews SET rating = $1, comment = $2, created_at = CURRENT_TIMESTAMP WHERE product_id = $3 AND user_id = $4 RETURNING *`,
-      [ratings, comment, productId, req.user.id],
+      [ratings, comment, productId, req.user.id]
     );
   } else {
     review = await database.query(
       `INSERT INTO reviews (product_id, user_id, rating, comment) VALUES ($1, $2, $3, $4) RETURNING *`,
-      [productId, req.user.id, ratings, comment],
+      [productId, req.user.id, ratings, comment]
     );
   }
 
@@ -354,21 +354,21 @@ export const postProductReview = catchAsyncErrors(async (req, res, next) => {
 
   const allReviews = await database.query(
     `SELECT AVG(rating) AS avg_rating FROM reviews WHERE product_id = $1`,
-    [productId],
+    [productId]
   );
 
   const newAvgRating = allReviews.rows[0].avg_rating;
 
   const updateProductRating = await database.query(
     `UPDATE products SET ratings = $1 WHERE id = $2 RETURNING *`,
-    [newAvgRating, productId],
+    [newAvgRating, productId]
   );
 
   res.status(200).json({
     success: true,
     message: "Review Posted Successfully.",
     review: review.rows[0],
-    updatedProduct: updateProductRating.rows[0],
+    updatedProduct: updateProductRating.rows[0]
   });
 });
 
@@ -377,7 +377,7 @@ export const deleteReview = catchAsyncErrors(async (req, res, next) => {
 
   const review = await database.query(
     `DELETE FROM reviews WHERE product_id = $1 AND user_id = $2 RETURNING *`,
-    [productId, req.user.id],
+    [productId, req.user.id]
   );
 
   if (review.rows.length === 0) {
@@ -388,20 +388,20 @@ export const deleteReview = catchAsyncErrors(async (req, res, next) => {
 
   const allReviews = await database.query(
     `SELECT AVG(rating) AS avg_rating FROM reviews WHERE product_id = $1`,
-    [productId],
+    [productId]
   );
 
   const newAvgRating = allReviews.rows[0].avg_rating;
 
   const updateProductRating = await database.query(
     `UPDATE products SET ratings = $1 WHERE id = $2 RETURNING *`,
-    [newAvgRating, productId],
+    [newAvgRating, productId]
   );
 
   res.status(200).json({
     success: true,
     message: "Review deleted successfully.",
-    Product: updateProductRating.rows[0],
+    Product: updateProductRating.rows[0]
   });
 });
 
@@ -490,7 +490,7 @@ export const fetchAIFilteredProducts = catchAsyncErrors(
         "7",
         "8",
         "9",
-        "10",
+        "10"
       ]);
 
       return query
@@ -513,7 +513,7 @@ export const fetchAIFilteredProducts = catchAsyncErrors(
         OR category ILIKE ANY($1)
         LIMIT 200;
         `,
-      [keywords],
+      [keywords]
     );
 
     const filteredProducts = result.rows;
@@ -522,7 +522,7 @@ export const fetchAIFilteredProducts = catchAsyncErrors(
       return res.status(200).json({
         success: true,
         message: "No products found matching your prompt.",
-        products: [],
+        products: []
       });
     }
 
@@ -530,13 +530,13 @@ export const fetchAIFilteredProducts = catchAsyncErrors(
 
     const { success, products } = await getAIRecommendation(
       userPrompt,
-      filteredProducts,
+      filteredProducts
     );
 
     res.status(200).json({
       success: success,
       message: "AI filtered products.",
-      products,
+      products
     });
-  },
+  }
 );

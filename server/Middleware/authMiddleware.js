@@ -13,7 +13,7 @@ export const isAuthenticated = catchAsyncErrors(async (req, res, next) => {
 
   const user = await database.query(
     "SELECT * FROM users WHERE id = $1 LIMIT 1",
-    [decoded.id],
+    [decoded.id]
   );
 
   req.user = user.rows[0];
@@ -26,8 +26,8 @@ export const authorizedRoles = (...roles) => {
       return next(
         new ErrorHandler(
           `Role: ${req.user.role} is not allowed to access this resource.`,
-          403,
-        ),
+          403
+        )
       );
     }
     next();

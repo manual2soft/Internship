@@ -12,7 +12,7 @@ export const placeNewOrder = catchAsyncErrors(async (req, res, next) => {
     address,
     pincode,
     phone,
-    orderedItems,
+    orderedItems
   } = req.body;
 
   if (
@@ -25,7 +25,7 @@ export const placeNewOrder = catchAsyncErrors(async (req, res, next) => {
     !phone
   ) {
     return next(
-      new ErrorHandler("Please provide complete shipping details.", 400),
+      new ErrorHandler("Please provide complete shipping details.", 400)
     );
   }
 
@@ -40,7 +40,7 @@ export const placeNewOrder = catchAsyncErrors(async (req, res, next) => {
   const productIds = items.map((item) => item.product.id);
   const { rows: products } = await database.query(
     `SELECT id, price, stock, name FROM products WHERE id = ANY($1::uuid[])`,
-    [productIds],
+    [productIds]
   );
 
   let total_price = 0;
@@ -52,7 +52,7 @@ export const placeNewOrder = catchAsyncErrors(async (req, res, next) => {
 
     if (!product) {
       return next(
-        new ErrorHandler(`Product not found for ID :${item.product.id}`, 404),
+        new ErrorHandler(`Product not found for ID :${item.product.id}`, 404)
       );
     }
 
@@ -60,8 +60,8 @@ export const placeNewOrder = catchAsyncErrors(async (req, res, next) => {
       return next(
         new ErrorHandler(
           `Only ${product.stock} unite available for ${product.name}`,
-          400,
-        ),
+          400
+        )
       );
     }
 
@@ -74,25 +74,25 @@ export const placeNewOrder = catchAsyncErrors(async (req, res, next) => {
       item.quantity,
       product.price,
       item.product.images[0].url || "",
-      product.name,
+      product.name
     );
 
     const offset = index * 6;
 
     placeholders.push(
-      `($${offset + 1},$${offset + 2},$${offset + 3},$${offset + 4},$${offset + 5},$${offset + 6})`,
+      `($${offset + 1},$${offset + 2},$${offset + 3},$${offset + 4},$${offset + 5},$${offset + 6})`
     );
   });
 
   const tax_price = 0.008;
   const shipping_price = 50;
   total_price = Math.round(
-    total_price + total_price * tax_price + shipping_price,
+    total_price + total_price * tax_price + shipping_price
   );
 
   const orderResult = await database.query(
     `INSERT INTO orders (buyer_id, total_price, tax_price, shipping_price) VALUES ($1, $2, $3, $4) RETURNING *`,
-    [req.user.id, total_price, tax_price, shipping_price],
+    [req.user.id, total_price, tax_price, shipping_price]
   );
 
   const orderId = orderResult.rows[0].id;
@@ -103,13 +103,13 @@ export const placeNewOrder = catchAsyncErrors(async (req, res, next) => {
 
   await database.query(
     `INSERT INTO order_items (order_id, product_id,quantity, price, image, title) VALUES ${placeholders.join(", ")} RETURNING *`,
-    values,
+    values
   );
 
   await database.query(
     `INSERT INTO shipping_info (order_id, full_name, state, city, country, address, pincode, phone) 
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-    [orderId, full_name, state, city, country, address, pincode, phone],
+    [orderId, full_name, state, city, country, address, pincode, phone]
   );
 
   const paymentResponse = await generatePaymentIntent(orderId, total_price);
@@ -122,6 +122,6 @@ export const placeNewOrder = catchAsyncErrors(async (req, res, next) => {
     success: true,
     message: "Order Placed Successfully. Please proceed to payment.",
     paymentIntent: paymentResponse.clientSecret,
-    total_price,
+    total_price
   });
 });

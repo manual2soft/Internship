@@ -2,11 +2,11 @@ import express from "express";
 import {
   dashboardStats,
   deleteUser,
-  getAllUsers,
+  getAllUsers
 } from "../Controllers/adminController.js";
 import {
   authorizedRoles,
-  isAuthenticated,
+  isAuthenticated
 } from "../Middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -15,21 +15,21 @@ router.get(
   "/getallusers",
   isAuthenticated,
   authorizedRoles("Admin"),
-  getAllUsers,
+  getAllUsers
 ); //DASHBOARD
 
 router.delete(
   "/delete/:id",
   isAuthenticated,
   authorizedRoles("Admin"),
-  deleteUser,
+  deleteUser
 );
 
 router.get(
   "/fetch/dashboard-stats",
   isAuthenticated,
   authorizedRoles("Admin"),
-  dashboardStats,
+  dashboardStats
 );
 
 export default router;

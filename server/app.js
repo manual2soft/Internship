@@ -17,8 +17,8 @@ app.use(
   cors({
     origin: [process.env.FRONTEND_URL, process.env.DASHBOARD_URL],
     methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-  }),
+    credentials: true
+  })
 );
 
 app.post(
@@ -31,7 +31,7 @@ app.post(
       event = Stripe.webhooks.constructEvent(
         req.body,
         sig,
-        process.env.STRIPE_WEBHOOK_SECRET,
+        process.env.STRIPE_WEBHOOK_SECRET
       );
     } catch (error) {
       return res.status(400).send(`Webhook Error: ${error.message || error}`);
@@ -46,21 +46,21 @@ app.post(
         const updatedPaymentStatus = "Paid";
         const paymentTableUpdateResult = await database.query(
           `UPDATE payments SET payment_status = $1 WHERE payment_intent_id = $2 RETURNING *`,
-          [updatedPaymentStatus, paymentIntent_client_secret],
+          [updatedPaymentStatus, paymentIntent_client_secret]
         );
 
         const orderId = paymentTableUpdateResult.rows[0].order_id;
 
         const orderTableUpdateResult = await database.query(
           `UPDATE orders SET paid_at = NOW() WHERE id = $1 RETURNING *`,
-          [orderId],
+          [orderId]
         );
 
         // Reduce Stock For Each Product
 
         const { rows: orderedItems } = await database.query(
           `SELECT product_id,quantity FROM order_items WHERE order_id = $1`,
-          [orderId],
+          [orderId]
         );
 
         // For each ordered item , reduce the product stock
@@ -68,7 +68,7 @@ app.post(
         for (const item of orderedItems) {
           await database.query(`UPDATE products SET stock - $1 WHERE id = $2`, [
             item.quantity,
-            item.product_id,
+            item.product_id
           ]);
         }
       } catch (error) {
@@ -78,9 +78,9 @@ app.post(
       }
     }
     res.status(200).send({
-      received: true,
+      received: true
     });
-  },
+  }
 );
 
 app.use(cookieParser());
@@ -90,8 +90,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
   fileUpload({
     tempFileDir: "./uploads",
-    useTempFiles: true,
-  }),
+    useTempFiles: true
+  })
 );
 
 app.use("/api/v1/auth", authRouter);

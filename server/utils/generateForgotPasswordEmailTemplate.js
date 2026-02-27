@@ -22,7 +22,7 @@ export const generateEmailTemplate = (resetPasswordUrl) => {
                 <td style="color:#cccccc; font-size:16px; padding-top:10px;">
                     You requested to reset your password. Please click the button below to proceed:
                 </td>
-                </tr>
+                </tr> 
 
                 <tr>
                 <td align="center" style="padding:20px 0;">

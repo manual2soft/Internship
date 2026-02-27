@@ -30,13 +30,13 @@ export async function getAIRecommendation(userPrompt, products) {
         {
           role: "system",
           content:
-            "You are a product recommendation AI. Always return valid JSON.",
+            "You are a product recommendation AI. Always return valid JSON."
         },
-        { role: "user", content: githubAiPrompt },
+        { role: "user", content: githubAiPrompt }
       ],
       temperature: 0.3,
-      model: modelName,
-    },
+      model: modelName
+    }
   });
 
   if (isUnexpected(response)) {

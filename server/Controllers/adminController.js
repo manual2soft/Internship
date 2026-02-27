@@ -8,7 +8,7 @@ export const getAllUsers = catchAsyncErrors(async (req, res, next) => {
 
   const totalUsersResult = await database.query(
     `SELECT COUNT(*) FROM users WHERE role = $1`,
-    ["User"],
+    ["User"]
   );
 
   const totalUsers = parseInt(totalUsersResult.rows[0].count);
@@ -17,14 +17,14 @@ export const getAllUsers = catchAsyncErrors(async (req, res, next) => {
 
   const users = await database.query(
     `SELECT * FROM users WHERE role = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
-    ["User", 10, offset],
+    ["User", 10, offset]
   );
 
   res.status(200).json({
     success: true,
     totalUsers,
     currentPage: page,
-    users: users.rows,
+    users: users.rows
   });
 });
 
@@ -33,7 +33,7 @@ export const deleteUser = catchAsyncErrors(async (req, res, next) => {
 
   const deleteUser = await database.query(
     `DELETE FROM users WHERE id = $1 RETURNING *`,
-    [id],
+    [id]
   );
 
   if (deleteUser.rows.length === 0) {
@@ -48,7 +48,7 @@ export const deleteUser = catchAsyncErrors(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    message: "User Deleted Successfully",
+    message: "User Deleted Successfully"
   });
 });
 
@@ -63,19 +63,19 @@ export const dashboardStats = catchAsyncErrors(async (req, res, next) => {
   const currentMonthEnd = new Date(
     today.getFullYear(),
     today.getMonth() + 1,
-    0,
+    0
   );
 
   const previousMonthStart = new Date(
     today.getFullYear(),
     today.getMonth() - 1,
-    1,
+    1
   );
 
   const previousMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
 
   const totalRevenueAllTimeQuery = await database.query(
-    `SELECT SUM(total_price) FROM orders`,
+    `SELECT SUM(total_price) FROM orders`
   );
 
   const totalRevenueAllTime =
@@ -84,21 +84,21 @@ export const dashboardStats = catchAsyncErrors(async (req, res, next) => {
   // Total Users
   const totalUsersCountQuery = await database.query(
     `SELECT COUNT(*) FROM users WHERE role = $1`,
-    ["User"],
+    ["User"]
   );
 
   const totalUsersCount = parseInt(totalUsersCountQuery.rows[0].count) || 0;
 
   // Order Status Counts
   const orderStatusCountsQuery = await database.query(
-    `SELECT order_status, COUNT(*) FROM orders GROUP BY order_status`,
+    `SELECT order_status, COUNT(*) FROM orders GROUP BY order_status`
   );
 
   const orderStatusCounts = {
     Processing: 0,
     Shipped: 0,
     Delivered: 0,
-    Cancelled: 0,
+    Cancelled: 0
   };
 
   orderStatusCountsQuery.rows.forEach((row) => {
@@ -108,7 +108,7 @@ export const dashboardStats = catchAsyncErrors(async (req, res, next) => {
   // Todays Revenue
   const todaysRevenueQuery = await database.query(
     `SELECT SUM(total_price) FROM orders WHERE created_at::date = $1`,
-    [todayDate],
+    [todayDate]
   );
 
   const todayRevenue = parseFloat(todaysRevenueQuery.rows[0].sum) || 0;
@@ -116,7 +116,7 @@ export const dashboardStats = catchAsyncErrors(async (req, res, next) => {
   // Yesterday's Revenue
   const yesterdayRevenueQuery = await database.query(
     `SELECT SUM(total_price) FROM orders WHERE created_at::date = $1`,
-    [yesterdayDate],
+    [yesterdayDate]
   );
 
   const yesterdayRevenue = parseFloat(yesterdayRevenueQuery.rows[0].sum) || 0;
@@ -129,12 +129,12 @@ export const dashboardStats = catchAsyncErrors(async (req, res, next) => {
          SUM(total_price) AS totalSales
          FROM orders
          GROUP BY month, date
-         ORDER BY date ASC`,
+         ORDER BY date ASC`
   );
 
   const monthlySales = monthlySalesQuery.rows.map((row) => ({
     month: row.month,
-    totalSales: parseFloat(row.totalSales) || 0,
+    totalSales: parseFloat(row.totalSales) || 0
   }));
 
   // Top 5 Best Selling Products
@@ -148,7 +148,7 @@ export const dashboardStats = catchAsyncErrors(async (req, res, next) => {
         JOIN products p ON p.id = oi.product_id
         GROUP BY p.name, p.images, p.category, p.ratings
         ORDER BY total_sold DESC
-        LIMIT 5`,
+        LIMIT 5`
   );
 
   const topSellingProducts = topSellingProductsQuery.rows;
@@ -160,7 +160,7 @@ export const dashboardStats = catchAsyncErrors(async (req, res, next) => {
         FROM orders
         WHERE created_at BETWEEN $1 AND $2
         `,
-    [currentMonthStart, currentMonthEnd],
+    [currentMonthStart, currentMonthEnd]
   );
 
   const currentMonthSales =
@@ -169,7 +169,7 @@ export const dashboardStats = catchAsyncErrors(async (req, res, next) => {
   // Products With Low Stock less than or equal to 5
 
   const lowStockProductsQuery = await database.query(
-    `SELECT name, stock FROM products WHERE stock <= 5`,
+    `SELECT name, stock FROM products WHERE stock <= 5`
   );
 
   const lowStockProducts = lowStockProductsQuery.rows;
@@ -180,7 +180,7 @@ export const dashboardStats = catchAsyncErrors(async (req, res, next) => {
         FROM orders
         WHERE created_at BETWEEN $1 AND $2
         `,
-    [previousMonthStart, previousMonthEnd],
+    [previousMonthStart, previousMonthEnd]
   );
 
   const lastMonthRevenue = parseFloat(lastMonthRevenueQuery.rows[0].total) || 0;
@@ -197,7 +197,7 @@ export const dashboardStats = catchAsyncErrors(async (req, res, next) => {
 
   const newUsersThisMonthQuery = await database.query(
     `SELECT COUNT(*) FROM users WHERE created_at >= $1 AND role = $2`,
-    [currentMonthStart, "User"],
+    [currentMonthStart, "User"]
   );
 
   const newUsersThisMonth = parseInt(newUsersThisMonthQuery.rows[0].count) || 0;
@@ -217,6 +217,6 @@ export const dashboardStats = catchAsyncErrors(async (req, res, next) => {
     topSellingProducts,
     lowStockProducts,
     revenueGrowth,
-    newUsersThisMonth,
+    newUsersThisMonth
   });
 });

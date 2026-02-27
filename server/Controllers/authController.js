@@ -18,18 +18,18 @@ export const register = catchAsyncErrors(async (req, res, next) => {
 
   const isAlreadyRegistered = await database.query(
     `SELECT * FROM users WHERE email = $1`,
-    [email],
+    [email]
   );
 
   if (isAlreadyRegistered.rows.length > 0) {
     return next(
-      new ErrorHandler("User Already Registered with this email.", 400),
+      new ErrorHandler("User Already Registered with this email.", 400)
     );
   }
 
   if (password.length < 8 || password.length > 16) {
     return next(
-      new ErrorHandler("Password must be between 8 and 16 characters.", 400),
+      new ErrorHandler("Password must be between 8 and 16 characters.", 400)
     );
   }
 
@@ -37,7 +37,7 @@ export const register = catchAsyncErrors(async (req, res, next) => {
 
   const user = await database.query(
     "INSERT INTO users (name,email,password) VALUES ($1,$2,$3) RETURNING *",
-    [name, email, hashedPassword],
+    [name, email, hashedPassword]
   );
 
   sendToken(user.rows[0], 201, "Registered Successfully", res);
@@ -48,12 +48,12 @@ export const login = catchAsyncErrors(async (req, res, next) => {
 
   if (!email || !password) {
     return next(
-      new ErrorHandler("Please provide both email and password.", 400),
+      new ErrorHandler("Please provide both email and password.", 400)
     );
   }
 
   const user = await database.query(`SELECT * FROM users WHERE email = $1`, [
-    email,
+    email
   ]);
 
   if (user.rows.length === 0) {
@@ -62,7 +62,7 @@ export const login = catchAsyncErrors(async (req, res, next) => {
 
   const isPasswordMatched = await bcrypt.compare(
     password,
-    user.rows[0].password,
+    user.rows[0].password
   );
 
   if (!isPasswordMatched) {
@@ -76,7 +76,7 @@ export const getUser = catchAsyncErrors(async (req, res, next) => {
   const { user } = req;
   res.status(200).json({
     success: true,
-    user,
+    user
   });
 });
 
@@ -85,11 +85,11 @@ export const logout = catchAsyncErrors(async (req, res, next) => {
     .status(200)
     .cookie("token", " ", {
       expires: new Date(Date.now()),
-      httpOnly: true,
+      httpOnly: true
     })
     .json({
       success: true,
-      message: "Logged out Successfully.",
+      message: "Logged out Successfully."
     });
 });
 
@@ -99,7 +99,7 @@ export const forgotPassword = catchAsyncErrors(async (req, res, next) => {
 
   let userResult = await database.query(
     `SELECT * FROM users WHERE email = $1`,
-    [email],
+    [email]
   );
   if (userResult.rows.length === 0) {
     return next(new ErrorHandler("User not found with this email.", 404));
@@ -111,7 +111,7 @@ export const forgotPassword = catchAsyncErrors(async (req, res, next) => {
 
   await database.query(
     `UPDATE users SET reset_password_token = $1, reset_password_expire = to_timestamp($2) WHERE email = $3`,
-    [hashedToken, resetPasswordExpiresTime / 1000, email],
+    [hashedToken, resetPasswordExpiresTime / 1000, email]
   );
 
   const resetPasswordUrl = `${frontendUrl}/password/reset/${resetToken}`;
@@ -123,16 +123,16 @@ export const forgotPassword = catchAsyncErrors(async (req, res, next) => {
     await sendEmail({
       email: user.email,
       subject: "Ecommerce Account Password Recovery",
-      message,
+      message
     });
     res.status(200).json({
       success: true,
-      message: `Email Send to ${user.email} Successfully.`,
+      message: `Email Send to ${user.email} Successfully.`
     });
   } catch (error) {
     await database.query(
       `UPDATE users SET reset_password_token = NULL, reset_password_expire = NULL WHERE email = $1`,
-      [email],
+      [email]
     );
     return next(new ErrorHandler("Failed to send email.", 500));
   }
@@ -146,16 +146,16 @@ export const resetPassword = catchAsyncErrors(async (req, res, next) => {
     .digest("hex");
   const user = await database.query(
     `SELECT * FROM users WHERE reset_password_token = $1 AND reset_password_expire > NOW()`,
-    [resetPasswordToken],
+    [resetPasswordToken]
   );
   if (user.rows.length === 0) {
     return next(
-      new ErrorHandler("Reset Password Token is invalid or has expired.", 400),
+      new ErrorHandler("Reset Password Token is invalid or has expired.", 400)
     );
   }
   if (req.body.password !== req.body.confirmPassword) {
     return next(
-      new ErrorHandler("Password and Confirm Password do not match.", 400),
+      new ErrorHandler("Password and Confirm Password do not match.", 400)
     );
   }
 
@@ -166,7 +166,7 @@ export const resetPassword = catchAsyncErrors(async (req, res, next) => {
     req.body.confirmPassword?.length > 16
   ) {
     return next(
-      new ErrorHandler("Password must be between 8 and 16 characters.", 400),
+      new ErrorHandler("Password must be between 8 and 16 characters.", 400)
     );
   }
 
@@ -174,7 +174,7 @@ export const resetPassword = catchAsyncErrors(async (req, res, next) => {
 
   const updatedUser = await database.query(
     `UPDATE users SET password = $1, reset_password_token = NULL, reset_password_expire = NULL WHERE id = $2 RETURNING *`,
-    [hashedPassword, user.rows[0].id],
+    [hashedPassword, user.rows[0].id]
   );
 
   sendToken(updatedUser.rows[0], 200, "Password Reset Successfully.", res);
@@ -189,7 +189,7 @@ export const updatePassword = catchAsyncErrors(async (req, res, next) => {
 
   const isPasswordMatched = await bcrypt.compare(
     currentPassword,
-    req.user.password,
+    req.user.password
   );
 
   if (!isPasswordMatched) {
@@ -207,10 +207,7 @@ export const updatePassword = catchAsyncErrors(async (req, res, next) => {
     confirmNewPassword.length > 16
   ) {
     return next(
-      new ErrorHandler(
-        "New password must be between 8 and 16 characters.",
-        400,
-      ),
+      new ErrorHandler("New password must be between 8 and 16 characters.", 400)
     );
   }
 
@@ -218,7 +215,7 @@ export const updatePassword = catchAsyncErrors(async (req, res, next) => {
 
   const updatedUser = await database.query(
     `UPDATE users SET password = $1 WHERE id = $2 RETURNING *`,
-    [hashedPassword, req.user.id],
+    [hashedPassword, req.user.id]
   );
 
   sendToken(updatedUser.rows[0], 200, "Password Updated Successfully.", res);
@@ -248,13 +245,13 @@ export const updateProfile = catchAsyncErrors(async (req, res, next) => {
       {
         folder: "Ecommerce_Avatars",
         width: 150,
-        crop: "scale",
-      },
+        crop: "scale"
+      }
     );
 
     avatarData = {
       public_id: newProfileImage.public_id,
-      url: newProfileImage.secure_url,
+      url: newProfileImage.secure_url
     };
   }
 
@@ -263,12 +260,12 @@ export const updateProfile = catchAsyncErrors(async (req, res, next) => {
   if (Object.keys(avatarData).length === 0) {
     user = await database.query(
       `UPDATE users SET name = $1, email = $2 WHERE id = $3 RETURNING *`,
-      [name, email, req.user.id],
+      [name, email, req.user.id]
     );
   } else {
     user = await database.query(
       `UPDATE users SET name = $1, email = $2, avatar = $3 WHERE id = $4 RETURNING *`,
-      [name, email, avatarData, req.user.id],
+      [name, email, avatarData, req.user.id]
     );
   }
 

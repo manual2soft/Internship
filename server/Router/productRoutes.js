@@ -7,11 +7,11 @@ import {
   fetchAllProducts,
   fetchSingleProduct,
   postProductReview,
-  updateProduct,
+  updateProduct
 } from "../Controllers/productController.js";
 import {
   authorizedRoles,
-  isAuthenticated,
+  isAuthenticated
 } from "../Middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -20,7 +20,7 @@ router.post(
   "/admin/create",
   isAuthenticated,
   authorizedRoles("Admin"),
-  createProduct,
+  createProduct
 );
 
 router.get("/", fetchAllProducts);
@@ -30,14 +30,14 @@ router.put(
   "/admin/update/:productId",
   isAuthenticated,
   authorizedRoles("Admin"),
-  updateProduct,
+  updateProduct
 );
 
 router.delete(
   "/admin/delete/:productId",
   isAuthenticated,
   authorizedRoles("Admin"),
-  deleteProduct,
+  deleteProduct
 );
 
 router.put("/post-new/review/:productId", isAuthenticated, postProductReview);
