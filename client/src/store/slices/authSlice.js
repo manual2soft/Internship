@@ -170,6 +170,44 @@ const authSlice = createSlice({
       })
       .addCase(logout.rejected, (state) => {
         state.authUser = state.authUser;
+      })
+      .addCase(forgotPassword.pending, (state) => {
+        state.isRequestingForToken = true;
+      })
+      .addCase(forgotPassword.fulfilled, (state) => {
+        state.isRequestingForToken = false;
+      })
+      .addCase(forgotPassword.rejected, (state) => {
+        state.isRequestingForToken = false;
+      })
+      .addCase(resetPassword.pending, (state) => {
+        state.isUpdatingPassword = true;
+      })
+      .addCase(resetPassword.fulfilled, (state, action) => {
+        state.isUpdatingPassword = false;
+        state.authUser = action.payload;
+      })
+      .addCase(resetPassword.rejected, (state) => {
+        state.isUpdatingPassword = false;
+      })
+      .addCase(updatePassword.pending, (state) => {
+        state.isUpdatingPassword = true;
+      })
+      .addCase(updatePassword.fulfilled, (state) => {
+        state.isUpdatingPassword = false;
+      })
+      .addCase(updatePassword.rejected, (state) => {
+        state.isUpdatingPassword = false;
+      })
+      .addCase(updateProfile.pending, (state) => {
+        state.isUpdatingProfile = true;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.isUpdatingProfile = false;
+        state.authUser = action.payload;
+      })
+      .addCase(updateProfile.rejected, (state) => {
+        state.isUpdatingProfile = false;
       });
   }
 });
