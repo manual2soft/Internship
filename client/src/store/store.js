@@ -11,6 +11,6 @@ export const store = configureStore({
     popup: popupReducer,
     cart: cartReducer,
     product: productReducer,
-    order: orderReducer,
-  },
+    order: orderReducer
+  }
 });
