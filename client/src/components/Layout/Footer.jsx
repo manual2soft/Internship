@@ -6,7 +6,7 @@ import {
   Facebook,
   Twitter,
   Instagram,
-  Youtube,
+  Youtube
 } from "lucide-react";
 
 const Footer = () => {
@@ -15,27 +15,27 @@ const Footer = () => {
       { name: "About Us", path: "/about" },
       { name: "Careers", path: "#" },
       { name: "Press", path: "#" },
-      { name: "Blog", path: "#" },
+      { name: "Blog", path: "#" }
     ],
     customer: [
       { name: "Contact Us", path: "/contact" },
       { name: "FAQ", path: "/faq" },
       { name: "Shipping Info", path: "#" },
-      { name: "Returns", path: "#" },
+      { name: "Returns", path: "#" }
     ],
     legal: [
       { name: "Privacy Policy", path: "#" },
       { name: "Terms of Service", path: "#" },
       { name: "Cookie Policy", path: "#" },
-      { name: "Security", path: "#" },
-    ],
+      { name: "Security", path: "#" }
+    ]
   };
 
   const socialLinks = [
     { icon: Facebook, href: "#", label: "Facebook" },
     { icon: Twitter, href: "#", label: "Twitter" },
     { icon: Instagram, href: "#", label: "Instagram" },
-    { icon: Youtube, href: "#", label: "YouTube" },
+    { icon: Youtube, href: "#", label: "YouTube" }
   ];
 
   return (
@@ -167,10 +167,10 @@ const Footer = () => {
 
           <div className="text-center md:text-right">
             <p className="text-muted-foreground text-sm">
-              © 2024 ShopMate. All rights reserved.
+              © 2026 ShopMate. All rights reserved.
             </p>
             <p className="text-muted-foreground text-xs mt-1">
-              Developed By CodeWithZeeshu
+              Developed By Manual2Soft Solutions
             </p>
           </div>
         </div>
