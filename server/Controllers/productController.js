@@ -180,7 +180,7 @@ export const fetchAllProducts = catchAsyncErrors(async (req, res, next) => {
     success: true,
     products: result.rows,
     totalProducts,
-    newProductsQuery: newProductsResult.rows,
+    newProducts: newProductsResult.rows,
     topRatedProducts: topRatedResult.rows
   });
 });

@@ -25,6 +25,8 @@ import NotFound from "./pages/NotFound";
 import { getUser } from "./store/slices/authSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
+import { fetchAllProducts } from "./store/slices/productSlice";
+import { categories } from "./data/products";
 
 const App = () => {
   const { authUser, isCheckingAuth } = useSelector((state) => state.auth);
@@ -34,7 +36,22 @@ const App = () => {
     dispatch(getUser());
   }, [getUser]);
 
-  if (isCheckingAuth && !authUser) {
+  useEffect(() => {
+    dispatch(
+      fetchAllProducts({
+        category: "",
+        price: `0-1000000`,
+        search: "",
+        ratings: "",
+        availability: "",
+        page: 1
+      })
+    );
+  }, []);
+
+  const { products } = useSelector((state) => state.product);
+
+  if ((isCheckingAuth && !authUser) || !products) {
     return (
       <div className="flex items-center justify-center h-screen">
         <loader className="size-10 animate-spin" />
