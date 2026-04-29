@@ -20,6 +20,12 @@ export async function getAIRecommendation(userPrompt, products) {
                 Based on the following user request, filter and suggest the best matching products:
                 "${userPrompt}"
 
+                Instructions:
+              - return products that are clearly relevant to the user query.
+              - Match based on: name, category, description, and price if mentioned.
+              - DO NOT guess or include unrelated items.
+              - Do NOT explain anything.
+
                 Return STRICT valid JSON.
                 Do NOT wrap in markdown.
              `;
@@ -34,7 +40,7 @@ export async function getAIRecommendation(userPrompt, products) {
         },
         { role: "user", content: githubAiPrompt }
       ],
-      temperature: 0.3,
+      temperature: 0.1,
       model: modelName
     }
   });

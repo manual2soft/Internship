@@ -533,10 +533,24 @@ export const fetchAIFilteredProducts = catchAsyncErrors(
       filteredProducts
     );
 
+    let finalProducts = products?.recommended_products || [];
+
+    if (finalProducts.length === 0) {
+      finalProducts = filteredProducts;
+    }
+
     res.status(200).json({
-      success: success,
+      success: true,
       message: "AI filtered products.",
-      products
+      products: {
+        recommended_products: finalProducts
+      }
     });
+
+    // res.status(200).json({
+    //   success: success,
+    //   message: "AI filtered products.",
+    //   products
+    // });
   }
 );

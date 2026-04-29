@@ -27,6 +27,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { fetchAllProducts } from "./store/slices/productSlice";
 import { categories } from "./data/products";
+import { Loader } from "lucide-react";
 
 const App = () => {
   const { authUser, isCheckingAuth } = useSelector((state) => state.auth);
@@ -54,7 +55,7 @@ const App = () => {
   if ((isCheckingAuth && !authUser) || !products) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <loader className="size-10 animate-spin" />
+        <Loader className="size-10 animate-spin" />
       </div>
     );
   }

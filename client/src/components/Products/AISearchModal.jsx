@@ -11,7 +11,7 @@ const AISearchModal = () => {
   const { isAIPopupOpen } = useSelector((state) => state.popup);
 
   const exampleText = [
-    "Wireless headphones with deep bass under ₹3000",
+    "Filter a dress for men",
     "Budget gaming mouse with RGB lighting",
     "Lightweight laptop for students under ₹50000",
     "Smartwatch with fitness tracking and long battery",
