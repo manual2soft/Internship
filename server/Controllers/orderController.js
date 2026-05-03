@@ -59,7 +59,7 @@ export const placeNewOrder = catchAsyncErrors(async (req, res, next) => {
     if (item.quantity > product.stock) {
       return next(
         new ErrorHandler(
-          `Only ${product.stock} unite available for ${product.name}`,
+          `Only ${product.stock} units available for ${product.name}`,
           400
         )
       );
@@ -85,7 +85,7 @@ export const placeNewOrder = catchAsyncErrors(async (req, res, next) => {
   });
 
   const tax_price = 0.18;
-  const shipping_price = total_price >= 4500 ? 0 : 150;
+  const shipping_price = total_price >= 1000 ? 0 : 50;
   total_price = Math.round(
     total_price + total_price * tax_price + shipping_price
   );

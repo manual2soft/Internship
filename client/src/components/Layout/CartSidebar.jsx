@@ -86,6 +86,7 @@ const CartSidebar = () => {
                           {/* Quantity controls */}
                           <div className="flex items-center space-x-2 mt-2">
                             <button
+                              disabled={item.quantity <= 1}
                               onClick={() =>
                                 updateQuantity(
                                   item.product.id,

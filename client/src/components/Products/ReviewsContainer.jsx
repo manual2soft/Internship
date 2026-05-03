@@ -10,8 +10,8 @@ const ReviewsContainer = ({ product, productReviews }) => {
   );
   const dispatch = useDispatch();
 
-  const { rating, setRating } = useState(1);
-  const { comment, setComment } = useState("");
+  const [rating, setRating] = useState(1);
+  const [comment, setComment] = useState("");
 
   const handleReviewSubmit = (e) => {
     e.preventDefault();
@@ -46,12 +46,12 @@ const ReviewsContainer = ({ product, productReviews }) => {
             onChange={(e) => setComment(e.target.value)}
             rows={4}
             placeholder="Write your review here..."
-            className="w-full p-3 rounded-md border-border bg-background text-foreground"
+            className="w-full p-3 rounded-md border border-border bg-background text-foreground"
           />
           <button
             type="submit"
             disabled={isPostingReview}
-            className="px-6 py-2 rounded-lg bg-primary text-white font-semibold hover:glow-on-hover animate-smooth disabled:opacity-50"
+            className="px-6 py-2 rounded-lg bg-primary text-primary-foreground font-semibold hover:glow-on-hover animate-smooth disabled:opacity-50"
           >
             {isPostingReview ? "Submitting..." : "Submit Review"}
           </button>
