@@ -13,6 +13,7 @@ import { useDispatch, useSelector } from "react-redux";
 import ReviewsContainer from "../components/Products/ReviewsContainer";
 import { addToCart, updateCartQuantity } from "../store/slices/cartSlice";
 import { fetchProductDetails } from "../store/slices/productSlice";
+import { toast } from "react-toastify";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -27,6 +28,19 @@ const ProductDetail = () => {
 
   const handleAddToCart = () => {
     dispatch(addToCart({ product, quantity: 1 }));
+  };
+
+  const handleCopyURL = () => {
+    const currentURL = window.location.href;
+    navigator.clipboard
+      .writeText(currentURL)
+      .then(() => {
+        toast.success("Product URL copied to clipboard!");
+      })
+      .catch((err) => {
+        console.error("Failed to copy URL: ", err);
+        toast.error("Failed to copy product URL.");
+      });
   };
 
   useEffect(() => {
@@ -248,7 +262,10 @@ const ProductDetail = () => {
                       <span>Add to Wishlist</span>
                     </button>
 
-                    <button className="flex items-center space-x-2 text-muted-foreground hover:text-primary animate-smooth">
+                    <button
+                      onClick={handleCopyURL}
+                      className="flex items-center space-x-2 text-muted-foreground hover:text-primary animate-smooth"
+                    >
                       <Share2 className="w-5 h-5" />
                       <span>Share</span>
                     </button>
