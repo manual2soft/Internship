@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   Star,
   ShoppingCart,
@@ -41,6 +41,13 @@ const ProductDetail = () => {
         console.error("Failed to copy URL: ", err);
         toast.error("Failed to copy product URL.");
       });
+  };
+
+  const navigate = useNavigate();
+
+  const handleBuyNow = () => {
+    dispatch(addToCart({ product, quantity }));
+    navigate("/payment");
   };
 
   useEffect(() => {
@@ -250,6 +257,7 @@ const ProductDetail = () => {
                     <button
                       disabled={product.stock === 0}
                       className="py-3 bg-secondary text-foreground border border-border rounded-lg hover:bg-accent animate-smooth font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={handleBuyNow}
                     >
                       Buy Now
                     </button>

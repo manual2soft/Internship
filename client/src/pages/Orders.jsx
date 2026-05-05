@@ -1,11 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { Filter, Package, Truck, CheckCircle, XCircle } from "lucide-react";
+import {
+  Filter,
+  Package,
+  Truck,
+  CheckCircle,
+  XCircle,
+  Link
+} from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { fetchMyOrders } from "../store/slices/orderSlice";
 
 const Orders = () => {
   const [statusFilter, setStatusFilter] = useState("All");
+  const [selectedOrder, setSelectedOrder] = useState(null); // New
   const { myOrders } = useSelector((state) => state.order);
   const dispatch = useDispatch();
 
@@ -61,6 +69,10 @@ const Orders = () => {
 
   const { authUser } = useSelector((state) => state.auth);
   const navigate = useNavigate();
+
+  const handleWriteReview = (productId) => {
+    navigate(`/product/${productId}`);
+  };
 
   if (!authUser) {
     return navigate("/products");
@@ -188,27 +200,40 @@ const Orders = () => {
 
                     {/* Order Actions */}
                     <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-[hsla(var(--glass-border))]">
-                      <button className="px-4 py-2 glass-card hover:glow-on-hover animate-smooth text-sm">
+                      {/* <button className="px-4 py-2 glass-card hover:glow-on-hover animate-smooth text-sm">
                         View Details
                       </button>
 
                       <button className="px-4 py-2 glass-card hover:glow-on-hover animate-smooth text-sm">
                         Track Order
-                      </button>
+                      </button> */}
 
-                      {order.status === "Delivered" && (
+                      {order.order_status === "Processing" && (
                         <>
-                          <button className="px-4 py-2 glass-card hover:glow-on-hover animate-smooth text-sm">
+                          <button
+                            onClick={() => {
+                              if (order.order_items.length === 1) {
+                                handleWriteReview(
+                                  order.order_items[0].product_id
+                                );
+                              } else {
+                                setSelectedOrder(order);
+                              }
+                            }}
+                            className="px-4 py-2 glass-card hover:glow-on-hover animate-smooth text-sm"
+                          >
                             Write Review
                           </button>
-
-                          <button className="px-4 py-2 glass-card hover:glow-on-hover animate-smooth text-sm">
+                          <button
+                            onClick={() => navigate("/products")}
+                            className="px-4 py-2 glass-card hover:glow-on-hover animate-smooth text-sm"
+                          >
                             Reorder
                           </button>
                         </>
                       )}
 
-                      {/* {order.status === "Processing" && (
+                      {/* {order.order_status === "Processing" && (
                         <button className="px-4 py-2 glass-card hover:glow-on-hover animate-smooth text-sm text-destructive">
                           Cancel Order
                         </button>
@@ -221,6 +246,62 @@ const Orders = () => {
           )}
         </div>
       </div>
+      {/* Review Modal */}
+      {selectedOrder && (
+        <div className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div
+            className="glass-card p-6 w-full max-w-md animate-smooth
+                    bg-white dark:bg-transparent
+                    border border-gray-200 dark:border-[hsla(var(--glass-border))]"
+          >
+            {/* Header */}
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-foreground mb-4">
+              Select Product to Review
+            </h2>
+
+            {/* Items */}
+            <div className="space-y-3">
+              {selectedOrder.order_items.map((item) => (
+                <div
+                  key={item.product_id}
+                  className="flex items-center justify-between p-3 rounded-lg
+                       bg-gray-100 dark:bg-secondary/50"
+                >
+                  <span className="text-sm font-medium text-gray-800 dark:text-foreground truncate max-w-[65%]">
+                    {item.title}
+                  </span>
+
+                  <button
+                    onClick={() => {
+                      handleWriteReview(item.product_id);
+                      setSelectedOrder(null);
+                    }}
+                    className="px-3 py-1 rounded text-sm font-medium
+                         bg-gray-200 hover:bg-gray-300 text-gray-900
+                         dark:glass-card dark:hover:glow-on-hover dark:text-foreground
+                         transition-all"
+                  >
+                    Review
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer */}
+            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-[hsla(var(--glass-border))] flex justify-end">
+              <button
+                onClick={() => setSelectedOrder(null)}
+                className="px-4 py-2 text-sm font-medium rounded
+                     text-red-600 hover:bg-red-50
+                     dark:text-destructive dark:glass-card dark:hover:glow-on-hover
+                     transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
