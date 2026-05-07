@@ -126,7 +126,7 @@ export const dashboardStats = catchAsyncErrors(async (req, res, next) => {
     `SELECT 
          TO_CHAR(created_at, 'Mon YYYY') AS month,
          DATE_TRUNC('month', created_at) AS date,
-         SUM(total_price) AS totalSales
+         SUM(total_price) AS totalsales
          FROM orders
          GROUP BY month, date
          ORDER BY date ASC`
@@ -134,7 +134,7 @@ export const dashboardStats = catchAsyncErrors(async (req, res, next) => {
 
   const monthlySales = monthlySalesQuery.rows.map((row) => ({
     month: row.month,
-    totalSales: parseFloat(row.totalSales) || 0
+    totalsales: parseFloat(row.totalsales) || 0
   }));
 
   // Top 5 Best Selling Products

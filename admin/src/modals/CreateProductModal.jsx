@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-// import { createNewProduct } from "../store/slices/productsSlice";
+import { createNewProduct } from "../store/slices/productsSlice";
 import { toggleCreateProductModal } from "../store/slices/extraSlice";
 import { LoaderCircle } from "lucide-react";
 
@@ -146,7 +146,7 @@ const CreateProductModal = () => {
               {loading ? (
                 <>
                   <LoaderCircle className="w-6 h-6 animate-spin" />
-                  Creating
+                  <span>Creating..</span>
                 </>
               ) : (
                 "Add New Product"

@@ -190,13 +190,14 @@ export const updateAdminProfile = (data) => async (dispatch) => {
 };
 
 export const updatePassword =
-  (currentPassword, newPassword) => async (dispatch) => {
+  (currentPassword, newPassword, confirmNewPassword) => async (dispatch) => {
     dispatch(authSlice.actions.updatePasswordRequest());
     try {
       await axiosInstance
         .put("/auth/password/update", {
           currentPassword,
-          newPassword
+          newPassword,
+          confirmNewPassword
         })
         .then((res) => {
           dispatch(authSlice.actions.updatePasswordSuccess());

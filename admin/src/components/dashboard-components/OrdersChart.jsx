@@ -8,11 +8,11 @@ const OrdersChart = () => {
     Processing: "#facc15", // yellow
     Shipped: "#3b82f6", // blue
     Delivered: "#22c55e", // green
-    Cancelled: "#ef4444", // red
+    Cancelled: "#ef4444" // red
   };
   const orderStatusData = Object.keys(orderStatusCounts).map((status) => ({
     status,
-    count: parseInt(orderStatusCounts[status]),
+    count: parseInt(orderStatusCounts[status])
   }));
 
   return (
@@ -40,6 +40,17 @@ const OrdersChart = () => {
             <Tooltip />
           </PieChart>
         </ResponsiveContainer>
+        <div className="flex flex-wrap gap-3 mt-3">
+          {Object.keys(statusColors).map((status) => (
+            <div key={status} className="flex items-center gap-2 text-sm">
+              <span
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: statusColors[status] }}
+              ></span>
+              <span>{status}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </>
   );

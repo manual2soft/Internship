@@ -8,17 +8,33 @@ import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import { ToastContainer } from "react-toastify";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import SideBar from "./components/SideBar";
 import Dashboard from "./components/Dashboard";
 import Orders from "./components/Orders";
 import Products from "./components/Products";
 import Profile from "./components/Profile";
 import Users from "./components/Users";
+import { useEffect } from "react";
+import { getUser } from "./store/slices/authSlice";
+import { fetchAllUsers, getDashboardStats } from "./store/slices/adminSlice";
+import { fetchAllProducts } from "./store/slices/productsSlice";
 
 function App() {
   const { openedComponent } = useSelector((state) => state.extra);
   const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(getUser());
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(getDashboardStats());
+      dispatch(fetchAllProducts());
+    }
+  }, [isAuthenticated]);
 
   const renderDashboardContent = () => {
     switch (openedComponent) {
