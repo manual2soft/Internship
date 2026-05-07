@@ -11,14 +11,16 @@ import { getLastNMonths } from "../../lib/helper";
 
 const MonthlySalesChart = () => {
   const { monthlySales } = useSelector((state) => state.admin);
+
   const months = getLastNMonths(4).map((m) => m.month.slice(0, 3));
-  // const months = getLastNMonths(4).map((m) => m.month);
 
   const filled = months.map((m) => {
-    const found = monthlySales?.find((item) => item.month === m);
+    const found = monthlySales?.find(
+      (item) => item.month.slice(0, 3).toLowerCase() === m.toLowerCase()
+    );
     return {
       month: m,
-      totalSales: found?.totalSales || 0
+      totalSales: found?.totalsales || 0
     };
   });
   return (

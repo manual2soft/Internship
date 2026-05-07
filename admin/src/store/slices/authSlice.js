@@ -121,7 +121,12 @@ export const getUser = () => async (dispatch) => {
     });
   } catch (error) {
     dispatch(authSlice.actions.getUserFailure());
-    toast.error(error.response?.data?.message || "Failed to fetch user data.");
+
+    if (error.response?.status !== 401) {
+      toast.error(
+        error.response?.data?.message || "Failed to fetch user data."
+      );
+    }
   }
 };
 

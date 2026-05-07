@@ -157,9 +157,9 @@ const Orders = () => {
                           Order Items
                         </h4>
                         {Array.isArray(order.order_items) &&
-                          order.order_items.map((item, index) => (
+                          order.order_items.map((item) => (
                             <div
-                              key={item.id || `${order.id}-${index}`}
+                              key={item.order_item_id}
                               className="flex items-center gap-4 mb-2 border-b pb-2"
                             >
                               {item.image && (

@@ -52,6 +52,7 @@ const TopProductsChart = () => {
         <div className="relative">
           <ResponsiveContainer width="100%" height={250}>
             <BarChart
+              key={topSellingProducts.length}
               layout="vertical"
               data={topSellingProducts.slice(0, 3)}
               margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
@@ -72,7 +73,8 @@ const TopProductsChart = () => {
               <Bar
                 dataKey="total_sold"
                 radius={[4, 4, 4, 4]}
-                isAnimationActive={false}
+                isAnimationActive={true}
+                animationDuration={1500}
                 onMouseEnter={() => {}}
                 onMouseLeave={() => {}}
               >

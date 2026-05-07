@@ -12,17 +12,6 @@ const Stats = () => {
     totalRevenueAllTime
   } = useSelector((state) => state.admin);
 
-  useEffect(() => {
-    let change = yesterdayRevenue
-      ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100
-      : 0;
-    const revenueChangeText =
-      change === 0
-        ? "0.00% from yesterday"
-        : `${change > 0 ? "+" : "-"}${change.toFixed(2)}% from yesterday`;
-    setRevenueChange(revenueChangeText);
-  }, []);
-
   const stats = [
     {
       title: "Todays Revenue",
@@ -40,6 +29,24 @@ const Stats = () => {
       change: null
     }
   ];
+
+  useEffect(() => {
+    if (yesterdayRevenue !== undefined && yesterdayRevenue !== null) {
+      let change = 0;
+
+      if (yesterdayRevenue === 0) {
+        change = todayRevenue > 0 ? 100 : 0;
+      } else {
+        change = ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100;
+      }
+
+      const revenueChangeText = `${
+        change >= 0 ? "+" : "-"
+      } ${Math.abs(change).toFixed(2)}% from yesterday`;
+
+      setRevenueChange(revenueChangeText);
+    }
+  }, [todayRevenue, yesterdayRevenue]);
 
   return (
     <>

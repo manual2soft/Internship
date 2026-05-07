@@ -1,7 +1,6 @@
 # Environment variables file
 .env
 
-# Node modules 
+# Node modules folder
 node_modules/
 
-   
